@@ -5,25 +5,25 @@
                 <div class="row q-ma-xl q-col-gutter-md">
                     <q-form @submit="onSubmit" @reset="onReset" class="row col-12 q-col-gutter-xs">
                         <div class='col-3'>
-                            <q-input outlined v-model.trim="form.nome" dense label="Nome" :disable="action==='editar'"/>
+                            <q-input outlined v-model.trim="form.descricao" dense label="Descrição" :disable="action==='editar'"/>
                         </div>
                         <div class='col-2'>
-                            <q-input outlined v-model.trim="form.cpf" dense label="Cpf" :disable="action==='editar'"
-                            :rules="[
-                                val => !!val || 'CPF é obrigatório',
-                                val => /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/.test(val) || 'CPF inválido'
-                            ]" />
+                            <q-input outlined v-model.trim="form.valor" dense label="Valor"/>
                         </div>
                         <div class='col-2'>
-                            <q-input outlined v-model.trim="form.email" dense label="Email" />
-                        </div>
-                        <div class='col-2'>
-                            <q-input outlined v-model.trim="form.telefone" dense label="Telefone"
-                            mask='(##)#####-####'/>
-                        </div>
-                        <div class='col-3'>
-                            <q-select outlined dense v-model="form.mensalidade" :options="options" label="Mensalidade" @filter='filterFn'
-                            emit-value map-options option-value="id" option-label="descricao" use-chips use-input/>
+                            <q-input outlined dense v-model="form.dataValidade" mask="date" :rules="['date'] ">
+                                <template v-slot:append>
+                                    <q-icon name="event" class="cursor-pointer">
+                                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                                        <q-date v-model="form.dataValidade">
+                                        <div class="row items-center justify-end">
+                                            <q-btn v-close-popup label="Close" color="primary" flat />
+                                        </div>
+                                        </q-date>
+                                    </q-popup-proxy>
+                                    </q-icon>
+                                </template>
+                            </q-input>
                         </div>
                         <div class="col-12 q-mt-sm">
                         <q-btn unelevated rounded color="primary" label="Cadastrar" type='submit'
@@ -35,30 +35,25 @@
                     
                     <div class="col-12">
                     <q-table
-                        title="Usuários"
+                        title="Mensalidades"
                         :rows="rows"
                         :columns="columns"
                         row-key="index"
                         virtual-scroll
                         v-model:pagination="pagination"
                         @request="getData"
+                        
                     >
                         <template v-slot:body="props">
                             <q-tr :props="props">
-                                <q-td key="nome" :props="props">
-                                {{ props.row.nome }}
+                                <q-td key="descricao" :props="props">
+                                {{ props.row.descricao }}
                                 </q-td>
-                                <q-td key="cpf" :props="props">
-                                {{ props.row.cpf }}
+                                <q-td key="valor" :props="props">
+                                {{ formatValor(props.row.valor) }}
                                 </q-td>
-                                <q-td key="telefone" :props="props">
-                                {{ props.row.telefone }}
-                                </q-td>
-                                <q-td key="email" :props="props">
-                                {{ props.row.email }}
-                                </q-td>
-                                <q-td key="mensalidade" :props="props">
-                                {{ props.row.mensalidade ? props.row.mensalidade.descricao : null }}
+                                <q-td key="dataValidade" :props="props">
+                                {{ formatData(props.row.dataValidade) }}
                                 </q-td>
                                 
                                 <q-td key="edicao" :props="props">
@@ -95,15 +90,13 @@
     filter?: undefined
     getCellValue: (col: undefined, row: undefined) => undefined
     }
-    
+
     const action = ref('cadastrar')
     
     const columns = [
-        { name: 'nome', label: 'Nome', sortable: true, field: 'nome'},
-        { name: 'cpf', label: 'Cpf', field: 'cpf', sortable: true },
-        { name: 'telefone', label: 'Telefone', field: 'telefone', sortable: true },
-        { name: 'email', label: 'Email', field: 'email' },
-        { name: 'mensalidade', label: 'Mensalidade', field: 'mensalidade' },
+        { name: 'descricao', label: 'Descrição', sortable: true, field: 'descricao'},
+        { name: 'valor', label: 'Valor', field: 'valor', sortable: true },
+        { name: 'dataValidade', label: 'Vencimento', field: 'dataValidade', sortable: true },
         { name: 'edicao', label: '', field: 'edicao'},
         { name: 'exclusao', label: '', field: 'exclusao'}
 
@@ -120,21 +113,18 @@
      })
 
     function onReset() {
-        form.value.nome = ''
-        form.value.email = ''
-        form.value.cpf = ''
-        form.value.telefone = ''
+        form.value.descricao = ''
+        form.value.valor = 0
+        form.value.dataValidade = ''
         form.value.id = 0
-        form.value.mensalidade = null
     }
 
     async function onSubmit() {    
         if(validate()){
             if (action.value==='cadastrar') {
                 try {
-                const res = await api.post('/usuarios', form.value)
+                const res = await api.post('/mensalidades', form.value)
                 if(res && res.status===201){
-                    //Notify.create({ type: 'positive', message: 'Usuário criado!' })
                     console.log('deu certo')
                     await getData({ 
                         pagination: pagination.value,
@@ -143,14 +133,12 @@
                     })
                 }
                 } catch (error) {
-                    //Notify.create({ type: 'negative', message: 'Erro ao criar usuário' })
                     console.error(error)
                 }
             } else {
                try {
-                const res = await api.put(`/usuarios/${form.value.id}`, form.value)
+                const res = await api.put(`/mensalidades/${form.value.id}`, form.value)
                 if(res && res.status===204){
-                    //Notify.create({ type: 'positive', message: 'Usuário criado!' })
                     console.log('deu certo')
                     onReset()
                     action.value = 'cadastrar'
@@ -162,21 +150,17 @@
                     
                 }
             } catch (error) {
-                //Notify.create({ type: 'negative', message: 'Erro ao criar usuário' })
                 console.error(error)
             } 
             }
+            
             
         }
 
     }
 
     function validate() {
-        if (!form.value.nome || !form.value.cpf || !form.value.email || !form.value.telefone) {
-            // Notify.create({
-            //     type: 'negative',
-            //     message: 'Todos os campos são obrigatórios'
-            // })
+        if (!form.value.descricao || !form.value.valor || !form.value.dataValidade) {
             return false
         }
         return true
@@ -199,8 +183,7 @@
             pagination.value.sortBy = sortBy
             pagination.value.descending = descending
 
-            
-            const res = await api.get('/usuarios', {params: pagination.value})
+            const res = await api.get('/mensalidades', {params: pagination.value})
             if(res && res.status === 200){
                 rows.value = res.data.data
                 pagination.value.rowsNumber = res.data.meta.total
@@ -212,12 +195,12 @@
 
     async function deleteData(id: number){
         try{
-            const res = await api.delete(`/usuarios/${id}`)
+            const res = await api.delete(`/mensalidades/${id}`)
             if(res && res.status === 204){
                 await getData({ 
-                        pagination: pagination.value,
-                        filter: undefined,
-                        getCellValue: () => undefined
+                    pagination: pagination.value,
+                    filter: undefined,
+                    getCellValue: () => undefined
                     })
             }
         } catch(error){
@@ -225,13 +208,11 @@
         }
     }
 
-    function editData(data: {telefone: string, email: string, nome: string, cpf: string, id: number, mensalidade: {id: number, descricao: string}}) {
-        form.value.telefone = data.telefone
-        form.value.email = data.email
-        form.value.nome = data.nome
-        form.value.cpf = data.cpf
+    function editData(data: {descricao: string, valor: number, dataValidade: string, id: number,}) {
+        form.value.descricao = data.descricao
+        form.value.valor = data.valor
+        form.value.dataValidade = data.dataValidade
         form.value.id = data.id
-        form.value.mensalidade = data.mensalidade
         action.value = 'editar'
         
     }
@@ -239,37 +220,35 @@
 
     interface formProps{
         id: number,
-        nome: string,
-        cpf: string,
-        email: string,
-        telefone: string,
-        mensalidade: {id: number, descricao: string} | null
+        descricao: string,
+        valor: number,
+        dataValidade: string,
     }
 
     const form = ref<formProps>({
         id: 0,
-        nome: '',
-        cpf: '',
-        email: '',
-        telefone: '',
-        mensalidade: null
+        descricao: '',
+        valor: 0,
+        dataValidade: '',
     })
 
-    const options = ref([])
-
-    function filterFn(
-        val: string,
-        update: (fn: () => void, after?: () => void) => void
-        ) {
-        update(() => {
-        api.get('/mensalidades/list', { params: { filter: val } })
-            .then((res) => {
-            if (res.status === 200) {
-                options.value = res.data
-            }
-            })
-            .catch((err) => console.error(err))
-        })
+    function formatValor(valor: number): string {
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+        }).format(valor);
     }
+
+    function formatData(data: string):string {
+        const dateObject = new Date(data);
+        
+        return new Intl.DateTimeFormat('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            timeZone: 'UTC', // IMPORTANTE!
+        }).format(dateObject);
+    }
+
 
 </script>

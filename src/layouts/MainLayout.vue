@@ -30,14 +30,14 @@ import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink
 const linksList: EssentialLinkProps[] = [
   {
     title: 'Usuário',
-    icon: 'school',
+    icon: 'account_circle',
     link: '/#/usuarios',
   },
 
   {
     title: 'Mensalidade',
-    icon: 'code',
-    link: 'https://github.com/quasarframework',
+    icon: 'paid',
+    link: '/#/mensalidades',
   },
 
 ];
