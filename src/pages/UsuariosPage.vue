@@ -66,10 +66,24 @@
                                     @click='editData(props.row)'/>
                                 </q-td>
                                 <q-td key="exclusao" :props="props">
-                                    <q-btn outline round color="primary" icon="close"
+                                    <q-btn outline round color="primary" :icon="props.row.deletedAt ? 'check' : 'close'"
                                     @click='deleteData(props.row.id)'/>
                                 </q-td>
                             </q-tr>
+                        </template>
+
+                        <template v-slot:top-right>
+                            <q-input outline dense debounce="300" v-model="filter" placeholder="Search" @keyup.enter="getData">
+                            <template v-slot:append>
+                                <q-icon name="search" />
+                            </template>
+                            </q-input>
+
+                            <q-checkbox
+                                v-model="inativos"
+                                label="Exibir inativos"
+                                @update:model-value="getData"
+                            />
                         </template>
                     </q-table>
                     </div>
@@ -86,17 +100,19 @@
 
     type QTableRequestProps = {
         pagination: {
-        sortBy: string
-        descending: boolean
-        page: number
-        rowsPerPage: number
-        rowsNumber?: number
-        }
+            sortBy: string
+            descending: boolean
+            page: number
+            rowsPerPage: number
+            rowsNumber?: number
+            }
     filter?: undefined
     getCellValue: (col: undefined, row: undefined) => undefined
     }
     
     const action = ref('cadastrar')
+    const filter= ref('')
+    const inativos = ref(false)
     
     const columns = [
         { name: 'nome', label: 'Nome', sortable: true, field: 'nome'},
@@ -192,15 +208,16 @@
 
     async function getData(props: QTableRequestProps) {
         try{
-            const { page, rowsPerPage, sortBy, descending } = props.pagination
+            if(props.pagination){
+                const { page, rowsPerPage, sortBy, descending } = props.pagination
 
-            pagination.value.page = page
-            pagination.value.rowsPerPage = rowsPerPage
-            pagination.value.sortBy = sortBy
-            pagination.value.descending = descending
+                pagination.value.page = page ?? 1
+                pagination.value.rowsPerPage = rowsPerPage ?? 10
+                pagination.value.sortBy = sortBy ?? 'desc'
+                pagination.value.descending = descending ?? 'id'
+            }
 
-            
-            const res = await api.get('/usuarios', {params: pagination.value})
+            const res = await api.get('/usuarios', {params: {pagination: pagination.value, filter: filter.value, inativos: inativos.value}})
             if(res && res.status === 200){
                 rows.value = res.data.data
                 pagination.value.rowsNumber = res.data.meta.total

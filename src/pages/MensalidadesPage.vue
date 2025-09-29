@@ -66,6 +66,14 @@
                                 </q-td>
                             </q-tr>
                         </template>
+
+                        <template v-slot:top-right>
+                            <q-input outline dense debounce="300" v-model="filter" placeholder="Search" @keyup.enter="getData">
+                            <template v-slot:append>
+                                <q-icon name="search" />
+                            </template>
+                            </q-input>
+                        </template>
                     </q-table>
                     </div>
                 </div>           
@@ -103,6 +111,8 @@
     ]
     const rows = ref([
     ])
+
+    const filter= ref('')
 
     const pagination = ref({
         sortBy: 'desc',
@@ -176,14 +186,16 @@
 
     async function getData(props: QTableRequestProps) {
         try{
-            const { page, rowsPerPage, sortBy, descending } = props.pagination
+            if(props.pagination){
+                const { page, rowsPerPage, sortBy, descending } = props.pagination
 
-            pagination.value.page = page
-            pagination.value.rowsPerPage = rowsPerPage
-            pagination.value.sortBy = sortBy
-            pagination.value.descending = descending
+                pagination.value.page = page ?? 1
+                pagination.value.rowsPerPage = rowsPerPage ?? 10
+                pagination.value.sortBy = sortBy ?? 'desc'
+                pagination.value.descending = descending ?? 'id'
+            }
 
-            const res = await api.get('/mensalidades', {params: pagination.value})
+            const res = await api.get('/mensalidades', {params: {pagination: pagination.value, filter: filter.value}})
             if(res && res.status === 200){
                 rows.value = res.data.data
                 pagination.value.rowsNumber = res.data.meta.total
